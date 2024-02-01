@@ -425,7 +425,7 @@ class PyGDTelebot:
         resp = self.__session.request(
             method="GET",
             url=url,
-            timeout=120,
+            timeout=240,
             headers=self.__headers,
         )
         status_code = resp.status_code
