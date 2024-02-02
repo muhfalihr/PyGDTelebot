@@ -92,12 +92,13 @@ class PyGDTelebot:
                 )
 
                 try:
-                    medias, max_id = self.allmedia(**parameters)
-
                     send_msg = self.__bot.send_message(
                         chat_id=id,
                         text="Loading"
                     )
+
+                    medias, max_id = self.allmedia(**parameters)
+
                     media_group = []
 
                     for index, media in enumerate(medias):
@@ -281,12 +282,12 @@ class PyGDTelebot:
                 )
 
                 try:
-                    medias, max_id = self.videos(**parameters)
-
                     send_msg = self.__bot.send_message(
                         chat_id=id,
                         text="Loading"
                     )
+
+                    medias, max_id = self.videos(**parameters)
 
                     media_group = []
 
@@ -573,7 +574,7 @@ class PyGDTelebot:
 
             return data, filename, content_type
         else:
-            self.__http_error_status_code = status_code
+            self.__http_error_status_code = resp.status_code
             self.__http_error_reason = resp.reason
 
             self.__logger.error(
@@ -630,7 +631,7 @@ class PyGDTelebot:
             )
             return medias, next_max_id
         else:
-            self.__http_error_status_code = status_code
+            self.__http_error_status_code = resp.status_code
             self.__http_error_reason = resp.reason
 
             self.__logger.error(
@@ -687,7 +688,7 @@ class PyGDTelebot:
             )
             return medias, next_max_id
         else:
-            self.__http_error_status_code = status_code
+            self.__http_error_status_code = resp.status_code
             self.__http_error_reason = resp.reason
 
             self.__logger.error(
@@ -744,7 +745,7 @@ class PyGDTelebot:
             )
             return medias, next_max_id
         else:
-            self.__http_error_status_code = status_code
+            self.__http_error_status_code = resp.status_code
             self.__http_error_reason = resp.reason
 
             self.__logger.error(
@@ -801,7 +802,7 @@ class PyGDTelebot:
             )
             return medias
         else:
-            self.__http_error_status_code = status_code
+            self.__http_error_status_code = resp.status_code
             self.__http_error_reason = resp.reason
 
             self.__logger.error(
