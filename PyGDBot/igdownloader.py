@@ -43,6 +43,9 @@ class PyGDTelebot:
         self.__headers["Sec-Fetch-Site"] = "same-site"
         self.__headers["Cookie"] = self.__cookie
 
+        self.__http_error_status_code = None
+        self.__http_error_reason = None
+
         self.__current_func = lambda: inspect.getouterframes(
             inspect.currentframe()
         )[1][3]
@@ -83,41 +86,74 @@ class PyGDTelebot:
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
-                self.__bot.reply_to(
-                    message=message,
-                    text="Please wait...\nStill contains a lot of media."
+                self.__bot.send_message(
+                    chat_id=id,
+                    text="Please Wait...."
                 )
-                medias, max_id = self.allmedia(**parameters)
 
-                media_group = []
+                try:
+                    medias, max_id = self.allmedia(**parameters)
 
-                for media in medias:
-                    data, filename, content_type = self.__download(media)
+                    send_msg = self.__bot.send_message(
+                        chat_id=id,
+                        text="Loading"
+                    )
+                    media_group = []
 
-                    databyte = io.BytesIO(data)
-                    databyte.name = filename
+                    for index, media in enumerate(medias):
+                        self.__loading(
+                            message=send_msg,
+                            chat_id=id,
+                            iterations=index
+                        )
 
-                    if len(media_group) == 10:
-                        media_group.clear()
+                        data, filename, content_type = self.__download(media)
 
-                    if len(media_group) < 10:
-                        if "image" in content_type:
-                            media_group.append(
-                                types.InputMediaPhoto(media=databyte)
+                        databyte = io.BytesIO(data)
+                        databyte.name = filename
+
+                        if len(media_group) == 10:
+                            media_group.clear()
+
+                        if len(media_group) < 10:
+                            if "image" in content_type:
+                                media_group.append(
+                                    types.InputMediaPhoto(media=databyte)
+                                )
+                            elif "video" in content_type:
+                                media_group.append(
+                                    types.InputMediaVideo(media=databyte)
+                                )
+
+                        if len(media_group) == 10:
+                            self.__bot.send_media_group(
+                                chat_id=id,
+                                media=media_group
                             )
-                        elif "video" in content_type:
-                            media_group.append(
-                                types.InputMediaVideo(media=databyte)
+                            send_msg = self.__bot.send_message(
+                                chat_id=id,
+                                text="Loading"
                             )
 
-                    if len(media_group) == 10:
+                    if media_group:
                         self.__bot.send_media_group(
                             chat_id=id,
                             media=media_group
                         )
 
-                self.__bot.send_message(
-                    chat_id=id, text=f"Max ID for next media = {max_id}")
+                    if max_id:
+                        self.__bot.send_message(
+                            chat_id=id, text=f"Max ID for next media = {max_id}")
+                    else:
+                        self.__bot.send_message(
+                            chat_id=id, text="Done 😊")
+
+                except Exception:
+                    self.__bot.send_message(
+                        chat_id=id,
+                        text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+                    )
+
             else:
                 self.__bot.send_message(
                     chat_id=id, text=f"Your command is not correct.")
@@ -147,36 +183,69 @@ class PyGDTelebot:
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
-                self.__bot.reply_to(
-                    message=message,
-                    text="Please wait...\nStill loading the images."
+                self.__bot.send_message(
+                    chat_id=id,
+                    text="Please Wait...."
                 )
-                medias, max_id = self.images(**parameters)
 
-                media_group = []
+                try:
+                    send_msg = self.__bot.send_message(
+                        chat_id=id,
+                        text="Loading"
+                    )
 
-                for media in medias:
-                    data, filename, content_type = self.__download(media)
+                    medias, max_id = self.images(**parameters)
 
-                    databyte = io.BytesIO(data)
-                    databyte.name = filename
+                    media_group = []
 
-                    if len(media_group) == 10:
-                        media_group.clear()
-
-                    if len(media_group) < 10:
-                        media_group.append(
-                            types.InputMediaPhoto(media=databyte)
+                    for index, media in enumerate(medias):
+                        self.__loading(
+                            message=send_msg,
+                            chat_id=id,
+                            iterations=index
                         )
+                        data, filename, content_type = self.__download(media)
 
-                    if len(media_group) == 10:
+                        databyte = io.BytesIO(data)
+                        databyte.name = filename
+
+                        if len(media_group) == 10:
+                            media_group.clear()
+
+                        if len(media_group) < 10:
+                            media_group.append(
+                                types.InputMediaPhoto(media=databyte)
+                            )
+
+                        if len(media_group) == 10:
+                            self.__bot.send_media_group(
+                                chat_id=id,
+                                media=media_group
+                            )
+                            send_msg = self.__bot.send_message(
+                                chat_id=id,
+                                text="Loading"
+                            )
+
+                    if media_group:
                         self.__bot.send_media_group(
                             chat_id=id,
                             media=media_group
                         )
 
-                self.__bot.send_message(
-                    chat_id=id, text=f"Max ID for next media = {max_id}")
+                    if max_id:
+                        self.__bot.send_message(
+                            chat_id=id, text=f"Max ID for next media = {max_id}")
+                    else:
+                        self.__bot.send_message(
+                            chat_id=id, text="Done 😊")
+
+                except Exception:
+                    self.__bot.send_message(
+                        chat_id=id,
+                        text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+                    )
+
             else:
                 self.__bot.send_message(
                     chat_id=id, text=f"Your command is not correct.")
@@ -206,42 +275,69 @@ class PyGDTelebot:
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
-                self.__bot.reply_to(
-                    message=message,
-                    text="Please wait...\nStill loading the videos."
+                self.__bot.send_message(
+                    chat_id=id,
+                    text="Please Wait...."
                 )
-                medias, max_id = self.videos(**parameters)
 
-                media_group = []
+                try:
+                    medias, max_id = self.videos(**parameters)
 
-                for media in medias:
-                    data, filename, content_type = self.__download(media)
+                    send_msg = self.__bot.send_message(
+                        chat_id=id,
+                        text="Loading"
+                    )
 
-                    databyte = io.BytesIO(data)
-                    databyte.name = filename
+                    media_group = []
 
-                    if len(media_group) == 3:
-                        media_group.clear()
-
-                    if len(media_group) < 3:
-                        media_group.append(
-                            types.InputMediaVideo(media=databyte)
+                    for index, media in enumerate(medias):
+                        self.__loading(
+                            message=send_msg,
+                            chat_id=id,
+                            iterations=index
                         )
+                        data, filename, content_type = self.__download(media)
 
-                    if len(media_group) == 3:
+                        databyte = io.BytesIO(data)
+                        databyte.name = filename
+
+                        if len(media_group) == 3:
+                            media_group.clear()
+
+                        if len(media_group) < 3:
+                            media_group.append(
+                                types.InputMediaVideo(media=databyte)
+                            )
+
+                        if len(media_group) == 3:
+                            self.__bot.send_media_group(
+                                chat_id=id,
+                                media=media_group
+                            )
+                            send_msg = self.__bot.send_message(
+                                chat_id=id,
+                                text="Loading"
+                            )
+
+                    if media_group:
                         self.__bot.send_media_group(
                             chat_id=id,
                             media=media_group
                         )
 
-                if media_group:
-                    self.__bot.send_media_group(
+                    if max_id:
+                        self.__bot.send_message(
+                            chat_id=id, text=f"Max ID for next media = {max_id}")
+                    else:
+                        self.__bot.send_message(
+                            chat_id=id, text="Done 😊")
+
+                except Exception:
+                    self.__bot.send_message(
                         chat_id=id,
-                        media=media_group
+                        text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
                     )
 
-                self.__bot.send_message(
-                    chat_id=id, text=f"Max ID for next media = {max_id}")
             else:
                 self.__bot.send_message(
                     chat_id=id, text=f"Your command is not correct.")
@@ -271,47 +367,65 @@ class PyGDTelebot:
                 param = message.text.split()[1]
 
                 if re.match(pattern=pattern, string=param):
-                    self.__bot.reply_to(
-                        message=message,
-                        text="Please wait...\nStill loading the media."
+                    send_msg = self.__bot.send_message(
+                        chat_id=id,
+                        text="Please Wait...."
                     )
-                    medias = self.linkdownloader(param)
 
-                    media_group = []
+                    try:
+                        medias = self.linkdownloader(param)
 
-                    for media in medias:
-                        data, filename, content_type = self.__download(media)
+                        media_group = []
 
-                        databyte = io.BytesIO(data)
-                        databyte.name = filename
-
-                        if len(media_group) == 10:
-                            media_group.clear()
-
-                        if len(media_group) < 10:
-                            if "image" in content_type:
-                                media_group.append(
-                                    types.InputMediaPhoto(media=databyte)
-                                )
-                            elif "video" in content_type:
-                                media_group.append(
-                                    types.InputMediaVideo(media=databyte)
+                        for i, media in enumerate(medias):
+                            if len(medias) > 1:
+                                self.__loading(
+                                    message=send_msg,
+                                    chat_id=id,
+                                    iterations=i
                                 )
 
-                        if len(media_group) == 10:
+                            data, filename, content_type = self.__download(
+                                media
+                            )
+
+                            databyte = io.BytesIO(data)
+                            databyte.name = filename
+
+                            if len(media_group) == 10:
+                                media_group.clear()
+
+                            if len(media_group) < 10:
+                                if "image" in content_type:
+                                    media_group.append(
+                                        types.InputMediaPhoto(media=databyte)
+                                    )
+                                elif "video" in content_type:
+                                    media_group.append(
+                                        types.InputMediaVideo(media=databyte)
+                                    )
+
+                            if len(media_group) == 10:
+                                self.__bot.send_media_group(
+                                    chat_id=id,
+                                    media=media_group
+                                )
+
+                        if media_group:
                             self.__bot.send_media_group(
                                 chat_id=id,
                                 media=media_group
                             )
 
-                    if media_group:
-                        self.__bot.send_media_group(
+                        self.__bot.send_message(
+                            chat_id=id, text="Media download is complete.")
+
+                    except Exception:
+                        self.__bot.send_message(
                             chat_id=id,
-                            media=media_group
+                            text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
                         )
 
-                    self.__bot.send_message(
-                        chat_id=id, text="Media download is complete.")
                 else:
                     self.__bot.send_message(
                         chat_id=id, text=f"Your command is not correct.")
@@ -347,6 +461,15 @@ class PyGDTelebot:
                         "  - max_id (Optional) Used to retrieve the next media.\n"
                     )
                 )
+
+    def __loading(self, message: str, chat_id: int | str, iterations: int):
+        loading_text = f"Loading {'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[iterations % 10]}"
+
+        self.__bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message.message_id,
+            text=loading_text
+        )
 
     def __Csrftoken(self) -> str:
         self.__logger.info("Retrieves X-Csrf-Token from cookie.")
@@ -426,7 +549,7 @@ class PyGDTelebot:
             method="GET",
             url=url,
             timeout=240,
-            headers=self.__headers,
+            headers=self.__headers
         )
         status_code = resp.status_code
         data = resp.content
@@ -450,6 +573,9 @@ class PyGDTelebot:
 
             return data, filename, content_type
         else:
+            self.__http_error_status_code = status_code
+            self.__http_error_reason = resp.reason
+
             self.__logger.error(
                 HTTPErrorException(
                     f"Error! status code {resp.status_code} : {resp.reason}"
@@ -467,8 +593,8 @@ class PyGDTelebot:
 
         user_agent = self.__fake.user_agent()
 
-        url = f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}"\
-            if max_id else f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}&max_id={max_id}"
+        url = f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}&max_id={max_id}"\
+            if max_id else f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}"
 
         self.__headers["User-Agent"] = user_agent
         self.__headers["X-Asbd-Id"] = "129477"
@@ -504,6 +630,9 @@ class PyGDTelebot:
             )
             return medias, next_max_id
         else:
+            self.__http_error_status_code = status_code
+            self.__http_error_reason = resp.reason
+
             self.__logger.error(
                 HTTPErrorException(
                     f"Error! status code {resp.status_code} : {resp.reason}"
@@ -521,8 +650,8 @@ class PyGDTelebot:
 
         user_agent = self.__fake.user_agent()
 
-        url = f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}"\
-            if max_id else f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}&max_id={max_id}"
+        url = f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}&max_id={max_id}"\
+            if max_id else f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}"
 
         self.__headers["User-Agent"] = user_agent
         self.__headers["X-Asbd-Id"] = "129477"
@@ -558,6 +687,9 @@ class PyGDTelebot:
             )
             return medias, next_max_id
         else:
+            self.__http_error_status_code = status_code
+            self.__http_error_reason = resp.reason
+
             self.__logger.error(
                 HTTPErrorException(
                     f"Error! status code {resp.status_code} : {resp.reason}"
@@ -575,8 +707,8 @@ class PyGDTelebot:
 
         user_agent = self.__fake.user_agent()
 
-        url = f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}"\
-            if max_id else f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}&max_id={max_id}"
+        url = f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}&max_id={max_id}"\
+            if max_id else f"https://www.instagram.com/api/v1/feed/user/{username}/username/?count={count}"
 
         self.__headers["User-Agent"] = user_agent
         self.__headers["X-Asbd-Id"] = "129477"
@@ -612,6 +744,9 @@ class PyGDTelebot:
             )
             return medias, next_max_id
         else:
+            self.__http_error_status_code = status_code
+            self.__http_error_reason = resp.reason
+
             self.__logger.error(
                 HTTPErrorException(
                     f"Error! status code {resp.status_code} : {resp.reason}"
@@ -666,6 +801,9 @@ class PyGDTelebot:
             )
             return medias
         else:
+            self.__http_error_status_code = status_code
+            self.__http_error_reason = resp.reason
+
             self.__logger.error(
                 HTTPErrorException(
                     f"Error! status code {resp.status_code} : {resp.reason}"
