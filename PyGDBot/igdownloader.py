@@ -45,14 +45,108 @@ class PyGDTelebot:
 
         self.__http_error_status_code = None
         self.__http_error_reason = None
+        self.__func_name = None
 
         self.__current_func = lambda: inspect.getouterframes(
             inspect.currentframe()
         )[1][3]
         self.__hashmd5 = lambda url: hashlib.md5().update(url.encode("utf-8")).hexdigest()
+        self.__delws = lambda text: re.sub(r'\s', '', text)
+
+        @self.__bot.message_handler(commands=["help"])
+        def helper(message):
+            id = message.chat.id
+            self.__bot.send_message(
+                chat_id=id,
+                text=(
+                    "I can help you using this <b>PyGDTelebot</b>.\n"
+                    "You can control me by sending these commands :\n\n"
+                    "/start - Starting the <a href='https://t.me/itsPyGD_bot'>bot</a>\n"
+                    "/features - Shows the features of this bot.\n\n"
+                    "📖 Description of features:\n"
+                    "   ✮ <i>All Media</i> - Images and Videos from Instagram user posts.\n"
+                    "   ✮ <i>Images</i> - Images from Instagram user posts.\n"
+                    "   ✮ <i>Videos</i> - Videos from Instagram user posts.\n"
+                    "   ✮ <i>Link Downloader</i> - Media form the given URL.\n\n"
+                    "😱 Implementation of each feature :\n"
+                    "   ✮ <i>All Media, Images, Videos</i> :\n"
+                    "       ○ Complete this :\n"
+                    "           username = <b>(Required)</b>\n"
+                    "           max_id = <b>(Optional)</b>\n"
+                    "       ○ Application example :\n"
+                    "           username = iam_muhfalihr\n"
+                    "         -------------------- or --------------------\n"
+                    "           username = iam_muhfalihr\n"
+                    "           max_id = 12345678_987654321\n\n"
+                    "   ✮ <i>Link Downloader</i> :\n"
+                    "       Send Instagram User Post link!\n\n"
+                    "Please use this bot happily and calmly.\n"
+                    "Greetings of peace from @muhammadfalihromadhoni 💙\n\n"
+                    "🌟 Follow my Github <a href='https://github.com/muhfalihr'>muhfalihr</a>\n"
+                    "🚀 Follow my Instagram <a href='https://www.instagram.com/_____mfr.py/'>@_____mfr.py</a>"
+                ),
+                parse_mode='HTML'
+            )
+
+        @self.__bot.message_handler(commands=["features"])
+        def inlinekeybutton(message):
+            markup = types.InlineKeyboardMarkup()
+            allmedia = types.InlineKeyboardButton(
+                "All Media", callback_data='allmedia'
+            )
+            images = types.InlineKeyboardButton(
+                "Images", callback_data='images'
+            )
+            videos = types.InlineKeyboardButton(
+                "Videos", callback_data='videos'
+            )
+            linkdownloader = types.InlineKeyboardButton(
+                "Link Downloader", callback_data="linkdownloader"
+            )
+
+            markup.add(allmedia, images, videos, linkdownloader)
+
+            self.__bot.send_message(
+                message.chat.id, "🧐 Select one of the downloader features:", reply_markup=markup
+            )
+
+        @self.__bot.callback_query_handler(func=lambda call: True)
+        def option(call):
+            id = call.message.chat.id
+
+            match call.data:
+                case "allmedia" | "images" | "videos":
+                    self.__func_name = call.data
+
+                    message = self.__bot.send_message(
+                        chat_id=id,
+                        text=(
+                            "username = <b>(Required)</b>\n"
+                            "max_id = <b>(Optional)</b>\n"
+                        ),
+                        parse_mode="HTML"
+                    )
+                    self.__bot.reply_to(
+                        message=message,
+                        text=(
+                            "OK. Complete this!.\n"
+                            "Confused? See /help."
+                        )
+                    )
+
+                case "linkdownloader":
+                    self.__func_name = call.data
+
+                    message = self.__bot.send_message(
+                        chat_id=id,
+                        text=(
+                            "OK. Send Instagram User Post link!.\n"
+                            "Confused? See /help."
+                        )
+                    )
 
         @self.__bot.message_handler(commands=["start", "hello"])
-        def instruction(message):
+        def introduction(message):
             id = message.chat.id
             username = message.from_user.username
 
@@ -62,27 +156,40 @@ class PyGDTelebot:
             )
             self.__bot.send_message(
                 chat_id=id,
+                text="If you are still confused when using this <a href='https://t.me/itsPyGD_bot'>bot</a>, see /help.",
+                parse_mode="HTML"
+            )
+
+        @self.__bot.message_handler(commands=["report"])
+        def report(message):
+            self.__bot.send_message(
+                chat_id=message.chat.id,
                 text=(
-                    "Instructions for use:\n"
-                    "  - /allmedia username=username count=33 max_id=abcdefghij\n"
-                    "  - /images username=username count=33 max_id=abcdefghij\n"
-                    "  - /videos username=username count=33 max_id=abcdefghij\n"
-                    "  - /linkdownloader https://www.instagram.com/p/code/?utm_source=ig_web_copy_link\n\n"
-                    "Explanation:\n"
-                    "  - username (Required)\n"
-                    "  - count (Optional) Default = 33\n"
-                    "  - max_id (Optional) Used to retrieve the next media.\n"
+                    "Report a Problem 🙏 : ...\n\n"
+                    "Copy and complete the report text above."
                 )
             )
 
-        @self.__bot.message_handler(commands=["allmedia", "am"])
+        @self.__bot.message_handler(func=lambda message: True if "Report a Problem 🙏" in message.text else False)
+        def savereport(message):
+            id = message.chat.id
+            user = message.from_user.username
+            with open(f"report/report-{user}-{datetime.now().strftime('%Y%m%d%H%M%S')}.txt", "w") as report_file:
+                report_file.write(message.text)
+
+            self.__bot.send_message(
+                chat_id=id,
+                text="Report sent successfully. Thank you🙏"
+            )
+
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "allmedia" and message else False)
         def send_allmedia(message):
             id = message.chat.id
             parameters = dict()
 
-            for param in message.text.split():
+            for param in message.text.split("\n"):
                 if "=" in param:
-                    parameter = param.split("=")
+                    parameter = self.__delws(param).split("=")
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
@@ -92,31 +199,20 @@ class PyGDTelebot:
                 )
 
                 try:
-                    send_msg = self.__bot.send_message(
-                        chat_id=id,
-                        text="Loading"
-                    )
-
                     medias, max_id = self.allmedia(**parameters)
 
                     media_group = []
 
-                    for index, media in enumerate(medias):
-                        self.__loading(
-                            message=send_msg,
-                            chat_id=id,
-                            iterations=index
-                        )
-
+                    for media in medias:
                         data, filename, content_type = self.__download(media)
 
                         databyte = io.BytesIO(data)
                         databyte.name = filename
 
-                        if len(media_group) == 10:
+                        if len(media_group) == 5:
                             media_group.clear()
 
-                        if len(media_group) < 10:
+                        if len(media_group) < 5:
                             if "image" in content_type:
                                 media_group.append(
                                     types.InputMediaPhoto(media=databyte)
@@ -126,14 +222,14 @@ class PyGDTelebot:
                                     types.InputMediaVideo(media=databyte)
                                 )
 
-                        if len(media_group) == 10:
+                        if len(media_group) == 5:
                             self.__bot.send_media_group(
                                 chat_id=id,
                                 media=media_group
                             )
-                            send_msg = self.__bot.send_message(
+                            self.__bot.send_message(
                                 chat_id=id,
-                                text="Loading"
+                                text="Please Wait...."
                             )
 
                     if media_group:
@@ -149,38 +245,25 @@ class PyGDTelebot:
                         self.__bot.send_message(
                             chat_id=id, text="Done 😊")
 
-                except Exception:
                     self.__bot.send_message(
                         chat_id=id,
-                        text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+                        text="To continue or not, specify in /features."
                     )
+
+                except Exception:
+                    self.__http_error(chat_id=id)
 
             else:
-                self.__bot.send_message(
-                    chat_id=id, text=f"Your command is not correct.")
-                self.__bot.send_message(
-                    chat_id=id,
-                    text=(
-                        "Instructions for use:\n"
-                        "  - /allmedia username=username count=33 max_id=abcdefghij\n"
-                        "  - /images username=username count=33 max_id=abcdefghij\n"
-                        "  - /videos username=username count=33 max_id=abcdefghij\n"
-                        "  - /linkdownloader https://www.instagram.com/p/code/?utm_source=ig_web_copy_link\n\n"
-                        "Explanation:\n"
-                        "  - username (Required)\n"
-                        "  - count (Optional) Default = 33\n"
-                        "  - max_id (Optional) Used to retrieve the next media.\n"
-                    )
-                )
+                self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(commands=["images", "imgs"])
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "images" and message else False)
         def send_images(message):
             id = message.chat.id
             parameters = dict()
 
-            for param in message.text.split():
+            for param in message.text.split("\n"):
                 if "=" in param:
-                    parameter = param.split("=")
+                    parameter = self.__delws(param).split("=")
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
@@ -190,42 +273,32 @@ class PyGDTelebot:
                 )
 
                 try:
-                    send_msg = self.__bot.send_message(
-                        chat_id=id,
-                        text="Loading"
-                    )
-
                     medias, max_id = self.images(**parameters)
 
                     media_group = []
 
-                    for index, media in enumerate(medias):
-                        self.__loading(
-                            message=send_msg,
-                            chat_id=id,
-                            iterations=index
-                        )
+                    for media in medias:
                         data, filename, content_type = self.__download(media)
 
                         databyte = io.BytesIO(data)
                         databyte.name = filename
 
-                        if len(media_group) == 10:
+                        if len(media_group) == 5:
                             media_group.clear()
 
-                        if len(media_group) < 10:
+                        if len(media_group) < 5:
                             media_group.append(
                                 types.InputMediaPhoto(media=databyte)
                             )
 
-                        if len(media_group) == 10:
+                        if len(media_group) == 5:
                             self.__bot.send_media_group(
                                 chat_id=id,
                                 media=media_group
                             )
-                            send_msg = self.__bot.send_message(
+                            self.__bot.send_message(
                                 chat_id=id,
-                                text="Loading"
+                                text="Please Wait...."
                             )
 
                     if media_group:
@@ -241,38 +314,25 @@ class PyGDTelebot:
                         self.__bot.send_message(
                             chat_id=id, text="Done 😊")
 
-                except Exception:
                     self.__bot.send_message(
                         chat_id=id,
-                        text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+                        text="To continue or not, specify in /features."
                     )
+
+                except Exception:
+                    self.__http_error(chat_id=id)
 
             else:
-                self.__bot.send_message(
-                    chat_id=id, text=f"Your command is not correct.")
-                self.__bot.send_message(
-                    chat_id=id,
-                    text=(
-                        "Instructions for use:\n"
-                        "  - /allmedia username=username count=33 max_id=abcdefghij\n"
-                        "  - /images username=username count=33 max_id=abcdefghij\n"
-                        "  - /videos username=username count=33 max_id=abcdefghij\n"
-                        "  - /linkdownloader https://www.instagram.com/p/code/?utm_source=ig_web_copy_link\n\n"
-                        "Explanation:\n"
-                        "  - username (Required)\n"
-                        "  - count (Optional) Default = 33\n"
-                        "  - max_id (Optional) Used to retrieve the next media.\n"
-                    )
-                )
+                self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(commands=["videos", "vds"])
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "videos" and message else False)
         def send_videos(message):
             id = message.chat.id
             parameters = dict()
 
-            for param in message.text.split():
+            for param in message.text.split("\n"):
                 if "=" in param:
-                    parameter = param.split("=")
+                    parameter = self.__delws(param).split("=")
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
@@ -282,21 +342,11 @@ class PyGDTelebot:
                 )
 
                 try:
-                    send_msg = self.__bot.send_message(
-                        chat_id=id,
-                        text="Loading"
-                    )
-
                     medias, max_id = self.videos(**parameters)
 
                     media_group = []
 
-                    for index, media in enumerate(medias):
-                        self.__loading(
-                            message=send_msg,
-                            chat_id=id,
-                            iterations=index
-                        )
+                    for media in medias:
                         data, filename, content_type = self.__download(media)
 
                         databyte = io.BytesIO(data)
@@ -315,9 +365,9 @@ class PyGDTelebot:
                                 chat_id=id,
                                 media=media_group
                             )
-                            send_msg = self.__bot.send_message(
+                            self.__bot.send_message(
                                 chat_id=id,
-                                text="Loading"
+                                text="Please Wait...."
                             )
 
                     if media_group:
@@ -333,42 +383,28 @@ class PyGDTelebot:
                         self.__bot.send_message(
                             chat_id=id, text="Done 😊")
 
-                except Exception:
                     self.__bot.send_message(
                         chat_id=id,
-                        text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+                        text="To continue or not, specify in /features."
                     )
+
+                except Exception:
+                    self.__http_error(chat_id=id)
 
             else:
-                self.__bot.send_message(
-                    chat_id=id, text=f"Your command is not correct.")
-                self.__bot.send_message(
-                    chat_id=id,
-                    text=(
-                        "Instructions for use:\n"
-                        "  - /allmedia username=username count=33 max_id=abcdefghij\n"
-                        "  - /images username=username count=33 max_id=abcdefghij\n"
-                        "  - /videos username=username count=33 max_id=abcdefghij\n"
-                        "  - /linkdownloader https://www.instagram.com/p/code/?utm_source=ig_web_copy_link\n\n"
-                        "Explanation:\n"
-                        "  - username (Required)\n"
-                        "  - count (Optional) Default = 33\n"
-                        "  - max_id (Optional) Used to retrieve the next media.\n"
-                    )
-                )
+                self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(commands=["linkdownloader", "ld"])
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "linkdownloader" and message else False)
         def send_media_from_ld(message):
             id = message.chat.id
-            param = ""
 
             pattern = r'https:\/\/www\.instagram\.com\/.+\/.+\/\?utm_source=ig_web_copy_link'
 
             try:
-                param = message.text.split()[1]
+                param = message.text
 
                 if re.match(pattern=pattern, string=param):
-                    send_msg = self.__bot.send_message(
+                    self.__bot.send_message(
                         chat_id=id,
                         text="Please Wait...."
                     )
@@ -378,14 +414,7 @@ class PyGDTelebot:
 
                         media_group = []
 
-                        for i, media in enumerate(medias):
-                            if len(medias) > 1:
-                                self.__loading(
-                                    message=send_msg,
-                                    chat_id=id,
-                                    iterations=i
-                                )
-
+                        for media in medias:
                             data, filename, content_type = self.__download(
                                 media
                             )
@@ -393,10 +422,10 @@ class PyGDTelebot:
                             databyte = io.BytesIO(data)
                             databyte.name = filename
 
-                            if len(media_group) == 10:
+                            if len(media_group) == 5:
                                 media_group.clear()
 
-                            if len(media_group) < 10:
+                            if len(media_group) < 5:
                                 if "image" in content_type:
                                     media_group.append(
                                         types.InputMediaPhoto(media=databyte)
@@ -406,10 +435,14 @@ class PyGDTelebot:
                                         types.InputMediaVideo(media=databyte)
                                     )
 
-                            if len(media_group) == 10:
+                            if len(media_group) == 5:
                                 self.__bot.send_media_group(
                                     chat_id=id,
                                     media=media_group
+                                )
+                                self.__bot.send_message(
+                                    chat_id=id,
+                                    text="Please Wait...."
                                 )
 
                         if media_group:
@@ -419,58 +452,41 @@ class PyGDTelebot:
                             )
 
                         self.__bot.send_message(
-                            chat_id=id, text="Media download is complete.")
+                            chat_id=id, text="Done 😊")
 
                     except Exception:
-                        self.__bot.send_message(
-                            chat_id=id,
-                            text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
-                        )
+                        self.__http_error(chat_id=id)
 
                 else:
-                    self.__bot.send_message(
-                        chat_id=id, text=f"Your command is not correct.")
-                    self.__bot.send_message(
-                        chat_id=id,
-                        text=(
-                            "Instructions for use:\n"
-                            "  - /allmedia username=username count=33 max_id=abcdefghij\n"
-                            "  - /images username=username count=33 max_id=abcdefghij\n"
-                            "  - /videos username=username count=33 max_id=abcdefghij\n"
-                            "  - /linkdownloader https://www.instagram.com/p/code/?utm_source=ig_web_copy_link\n\n"
-                            "Explanation:\n"
-                            "  - username (Required)\n"
-                            "  - count (Optional) Default = 33\n"
-                            "  - max_id (Optional) Used to retrieve the next media.\n"
-                        )
-                    )
+                    self.__instructions(chat_id=id)
 
             except IndexError:
-                self.__bot.send_message(
-                    chat_id=id, text=f"Your command is not correct.")
-                self.__bot.send_message(
-                    chat_id=id,
-                    text=(
-                        "Instructions for use:\n"
-                        "  - /allmedia username=username count=33 max_id=abcdefghij\n"
-                        "  - /images username=username count=33 max_id=abcdefghij\n"
-                        "  - /videos username=username count=33 max_id=abcdefghij\n"
-                        "  - /linkdownloader https://www.instagram.com/p/code/?utm_source=ig_web_copy_link\n\n"
-                        "Explanation:\n"
-                        "  - username (Required)\n"
-                        "  - count (Optional) Default = 33\n"
-                        "  - max_id (Optional) Used to retrieve the next media.\n"
-                    )
-                )
+                self.__instructions(chat_id=id)
 
-    def __loading(self, message: str, chat_id: int | str, iterations: int):
-        loading_text = f"Loading {'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[iterations % 10]}"
-
-        self.__bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=message.message_id,
-            text=loading_text
+    def __instructions(self, chat_id: str):
+        self.__bot.send_message(
+            chat_id=chat_id, text=f"Your command is not correct. See /help"
         )
+
+    def __http_error(self, chat_id: str):
+        if self.__http_error_reason and self.__http_error_status_code is not None:
+            self.__bot.send_message(
+                chat_id=chat_id,
+                text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+            )
+            self.__bot.send_message(
+                chat_id=chat_id,
+                text="Sorry🙏 Please report this issue. /report"
+            )
+        else:
+            self.__bot.send_message(
+                chat_id=chat_id,
+                text=f"Error! status code 500 : Internal Server Error"
+            )
+            self.__bot.send_message(
+                chat_id=chat_id,
+                text="Sorry🙏 Please Try Again 😥. /report"
+            )
 
     def __Csrftoken(self) -> str:
         self.__logger.info("Retrieves X-Csrf-Token from cookie.")
