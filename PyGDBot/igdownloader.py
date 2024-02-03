@@ -50,7 +50,6 @@ class PyGDTelebot:
         self.__current_func = lambda: inspect.getouterframes(
             inspect.currentframe()
         )[1][3]
-        self.__hashmd5 = lambda url: hashlib.md5().update(url.encode("utf-8")).hexdigest()
         self.__delws = lambda text: re.sub(r'\s', '', text)
 
         @self.__bot.message_handler(commands=["help"])
@@ -92,16 +91,16 @@ class PyGDTelebot:
         def inlinekeybutton(message):
             markup = types.InlineKeyboardMarkup()
             allmedia = types.InlineKeyboardButton(
-                "All Media", callback_data='allmedia'
+                "All Media", callback_data='All Media'
             )
             images = types.InlineKeyboardButton(
-                "Images", callback_data='images'
+                "Images", callback_data='Images'
             )
             videos = types.InlineKeyboardButton(
-                "Videos", callback_data='videos'
+                "Videos", callback_data='Videos'
             )
             linkdownloader = types.InlineKeyboardButton(
-                "Link Downloader", callback_data="linkdownloader"
+                "Link Downloader", callback_data="Link Downloader"
             )
 
             markup.add(allmedia, images, videos, linkdownloader)
@@ -113,14 +112,16 @@ class PyGDTelebot:
         @self.__bot.callback_query_handler(func=lambda call: True)
         def option(call):
             id = call.message.chat.id
+            call_data = call.data
 
-            match call.data:
-                case "allmedia" | "images" | "videos":
-                    self.__func_name = call.data
+            match call_data:
+                case "All Media" | "Images" | "Videos":
+                    self.__func_name = call_data
 
                     message = self.__bot.send_message(
                         chat_id=id,
                         text=(
+                            f"<i><b>{call_data} Feature</b></i>\n\n"
                             "username = <b>(Required)</b>\n"
                             "max_id = <b>(Optional)</b>\n"
                         ),
@@ -134,8 +135,8 @@ class PyGDTelebot:
                         )
                     )
 
-                case "linkdownloader":
-                    self.__func_name = call.data
+                case "Link Downloader":
+                    self.__func_name = call_data
 
                     message = self.__bot.send_message(
                         chat_id=id,
@@ -179,10 +180,10 @@ class PyGDTelebot:
 
             self.__bot.send_message(
                 chat_id=id,
-                text="Report sent successfully. Thank you🙏"
+                text="Report sent successfully. Thank you🙏. /help"
             )
 
-        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "allmedia" and message else False)
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "All Media" and message else False)
         def send_allmedia(message):
             id = message.chat.id
             parameters = dict()
@@ -195,7 +196,10 @@ class PyGDTelebot:
             if parameters:
                 self.__bot.send_message(
                     chat_id=id,
-                    text="Please Wait...."
+                    text=(
+                        "Please Wait....\n"
+                        "This process may take a long time so please be patient and wait until a text message appears."
+                    )
                 )
 
                 try:
@@ -227,10 +231,6 @@ class PyGDTelebot:
                                 chat_id=id,
                                 media=media_group
                             )
-                            self.__bot.send_message(
-                                chat_id=id,
-                                text="Please Wait...."
-                            )
 
                     if media_group:
                         self.__bot.send_media_group(
@@ -240,7 +240,12 @@ class PyGDTelebot:
 
                     if max_id:
                         self.__bot.send_message(
-                            chat_id=id, text=f"Max ID for next media = {max_id}")
+                            chat_id=id,
+                            text=(
+                                f"Your previous message : \n{message.text}\n\n"
+                                f"Max ID for next media = {max_id}"
+                            )
+                        )
                     else:
                         self.__bot.send_message(
                             chat_id=id, text="Done 😊")
@@ -256,7 +261,7 @@ class PyGDTelebot:
             else:
                 self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "images" and message else False)
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "Images" and message else False)
         def send_images(message):
             id = message.chat.id
             parameters = dict()
@@ -269,7 +274,10 @@ class PyGDTelebot:
             if parameters:
                 self.__bot.send_message(
                     chat_id=id,
-                    text="Please Wait...."
+                    text=(
+                        "Please Wait....\n"
+                        "This process may take a while so please be patient and wait until a text message appears."
+                    )
                 )
 
                 try:
@@ -296,10 +304,6 @@ class PyGDTelebot:
                                 chat_id=id,
                                 media=media_group
                             )
-                            self.__bot.send_message(
-                                chat_id=id,
-                                text="Please Wait...."
-                            )
 
                     if media_group:
                         self.__bot.send_media_group(
@@ -309,7 +313,12 @@ class PyGDTelebot:
 
                     if max_id:
                         self.__bot.send_message(
-                            chat_id=id, text=f"Max ID for next media = {max_id}")
+                            chat_id=id,
+                            text=(
+                                f"Your previous message : \n{message.text}\n\n"
+                                f"Max ID for next media = {max_id}"
+                            )
+                        )
                     else:
                         self.__bot.send_message(
                             chat_id=id, text="Done 😊")
@@ -325,7 +334,7 @@ class PyGDTelebot:
             else:
                 self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "videos" and message else False)
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "Videos" and message else False)
         def send_videos(message):
             id = message.chat.id
             parameters = dict()
@@ -338,7 +347,10 @@ class PyGDTelebot:
             if parameters:
                 self.__bot.send_message(
                     chat_id=id,
-                    text="Please Wait...."
+                    text=(
+                        "Please Wait....\n"
+                        "This process may take a long time so please be patient and wait until a text message appears."
+                    )
                 )
 
                 try:
@@ -365,10 +377,6 @@ class PyGDTelebot:
                                 chat_id=id,
                                 media=media_group
                             )
-                            self.__bot.send_message(
-                                chat_id=id,
-                                text="Please Wait...."
-                            )
 
                     if media_group:
                         self.__bot.send_media_group(
@@ -378,7 +386,12 @@ class PyGDTelebot:
 
                     if max_id:
                         self.__bot.send_message(
-                            chat_id=id, text=f"Max ID for next media = {max_id}")
+                            chat_id=id,
+                            text=(
+                                f"Your previous message : \n{message.text}\n\n"
+                                f"Max ID for next media = {max_id}"
+                            )
+                        )
                     else:
                         self.__bot.send_message(
                             chat_id=id, text="Done 😊")
@@ -394,7 +407,7 @@ class PyGDTelebot:
             else:
                 self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "linkdownloader" and message else False)
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name == "Link Downloader" and message else False)
         def send_media_from_ld(message):
             id = message.chat.id
 
@@ -440,10 +453,6 @@ class PyGDTelebot:
                                     chat_id=id,
                                     media=media_group
                                 )
-                                self.__bot.send_message(
-                                    chat_id=id,
-                                    text="Please Wait...."
-                                )
 
                         if media_group:
                             self.__bot.send_media_group(
@@ -465,7 +474,7 @@ class PyGDTelebot:
 
     def __instructions(self, chat_id: str):
         self.__bot.send_message(
-            chat_id=chat_id, text=f"Your command is not correct. See /help"
+            chat_id=chat_id, text=f"Unrecognized command. Say what?"
         )
 
     def __http_error(self, chat_id: str):
