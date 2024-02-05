@@ -49,6 +49,8 @@ class PyGDTelebot:
 
         self.__current_func = lambda: inspect.getouterframes(inspect.currentframe())[1][3]
         self.__delws = lambda text: re.sub(r'\s', '', text)
+        self.__instructions = lambda chat_id: self.__bot.send_message(chat_id=chat_id, text=f"Unrecognized command. Say what?")
+        
 
         @self.__bot.message_handler(commands=["help"])
         def helper(message):
@@ -160,6 +162,7 @@ class PyGDTelebot:
         def savereport(message):
             id = message.chat.id
             user = message.from_user.username
+
             with open(f"report/report-{user}-{datetime.now().strftime('%Y%m%d%H%M%S')}.txt", "w") as report_file:
                 report_file.write(message.text)
 
@@ -205,18 +208,24 @@ class PyGDTelebot:
                                         media_group.append(types.InputMediaPhoto(media=databyte))
                                     if "video" in content_type:
                                         media_group.append(types.InputMediaVideo(media=databyte))
-
-                                if len(media_group) == 3:
-                                    self.__bot.send_media_group(chat_id=id,media=media_group)
+                                
+                                try:
+                                    if len(media_group) == 3:
+                                        self.__bot.send_media_group(chat_id=id,media=media_group)
+                                except Exception:
+                                    self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
 
                             case "Images":
                                 if len(media_group) == 5: media_group.clear()
 
                                 if len(media_group) < 5:
                                     media_group.append(types.InputMediaPhoto(media=databyte))
-
-                                if len(media_group) == 5:
-                                    self.__bot.send_media_group(chat_id=id,media=media_group)
+                                
+                                try:
+                                    if len(media_group) == 5:
+                                        self.__bot.send_media_group(chat_id=id, media=media_group)
+                                except Exception:
+                                    self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
                     try:
                         if media_group:
                             self.__bot.send_media_group(chat_id=id,media=media_group)
@@ -245,12 +254,11 @@ class PyGDTelebot:
         @self.__bot.message_handler(func=lambda message: True if self.__func_name == "Link Downloader" and message else False)
         def send_media_from_ld(message):
             id = message.chat.id
+            param = message.text
 
             pattern = r'https:\/\/www\.instagram\.com\/.+\/.+\/\?utm_source=ig_web_copy_link'
 
             try:
-                param = message.text
-
                 if re.match(pattern=pattern, string=param):
                     self.__bot.send_message(
                         chat_id=id,
@@ -263,9 +271,7 @@ class PyGDTelebot:
                         media_group = []
 
                         for media in medias:
-                            data, filename, content_type = self.__download(
-                                media
-                            )
+                            data, filename, content_type = self.__download(media)
 
                             databyte = io.BytesIO(data)
                             databyte.name = filename
@@ -296,11 +302,6 @@ class PyGDTelebot:
             except IndexError:
                 self.__instructions(chat_id=id)
 
-    def __instructions(self, chat_id: str):
-        self.__bot.send_message(
-            chat_id=chat_id, text=f"Unrecognized command. Say what?"
-        )
-
     def __http_error(self, chat_id: str):
         if self.__http_error_reason and self.__http_error_status_code is not None:
             self.__bot.send_message(
@@ -309,7 +310,7 @@ class PyGDTelebot:
             )
             self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please report this issue. /report")
         else:
-            self.__bot.send_message(chat_id=chat_id, text=f"Error! status code 500 : Internal Server Error")
+            self.__bot.send_message(chat_id=chat_id, text=f"Error! A request to the Telegram API was unsuccessful.")
             self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please Try Again 😥. /report")
 
     def __Csrftoken(self) -> str:
@@ -416,16 +417,19 @@ class PyGDTelebot:
                                 for i in item.get("carousel_media", [])
                                 if i.get("video_versions", None) == None
                             ]
-                        else:
+                            medias.extend(images)
+
+                        elif item.get("video_versions", None) == None:
                             images = [max(item.get("image_versions2", {}).get("candidates", []), key=lambda x: x.get("width", 0) * x.get("height", 0)).get("url")]
-                        
+                            medias.extend(images)
+
                         videos = [
                                 max(i.get("video_versions", []), key=lambda x: x.get("width", 0) * x.get("height", 0)).get("url")
                                 for i in item.get("carousel_media", [item])
                                 if i.get("video_versions")
                             ]
                         
-                        medias.extend(images + videos)
+                        medias.extend(videos)
 
                     case "Images":
                         if item.get("carousel_media"):
@@ -434,10 +438,11 @@ class PyGDTelebot:
                                 for i in item.get("carousel_media", [])
                                 if i.get("video_versions", None) == None
                             ]
-                        else:
-                            images = [max(item.get("image_versions2", {}).get("candidates", []), key=lambda x: x.get("width", 0) * x.get("height", 0)).get("url")]
+                            medias.extend(images)
 
-                        medias.extend(images)
+                        elif item.get("video_versions", None) == None:
+                            images = [max(item.get("image_versions2", {}).get("candidates", []), key=lambda x: x.get("width", 0) * x.get("height", 0)).get("url")]
+                            medias.extend(images)
 
                     case "Videos":
                         videos = [
