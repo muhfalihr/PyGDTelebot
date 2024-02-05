@@ -98,10 +98,6 @@ cd PyGDTelebot/
 
 3. [Create and run Crontab](https://github.com/muhfalihr/PyGDTelebot/tree/master?tab=readme-ov-file#create-crontab).
 
-4. See the implementation video on Telegram.
-
-![implementation video](https://github.com/muhfalihr/mystorage/blob/master/video/Video%20tanpa%20judul%20%E2%80%90%20Dibuat%20dengan%20Clipchamp.mp4)
-
 ## Create a Telegram Bot
 
 - How to Get Your Bot Token
