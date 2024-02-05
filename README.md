@@ -100,7 +100,7 @@ cd PyGDTelebot/
 
 4. See the implementation video on Telegram.
 
-   <iframe width="1080" height="1080" src="https://instagram.fcgk34-1.fna.fbcdn.net/o1/v/t16/f1/m69/GICWmADfrA1xdnIBANBjLgXMGgFdbpR1AAAF.mp4?efg=eyJxZV9ncm91cHMiOiJbXCJpZ193ZWJfZGVsaXZlcnlfdnRzX290ZlwiXSIsInZlbmNvZGVfdGFnIjoidnRzX3ZvZF91cmxnZW4uY2xpcHMuYzIuMTA4MC5oaWdoIn0&_nc_ht=instagram.fcgk34-1.fna.fbcdn.net&_nc_cat=105&vs=1563829104461983_700654015&_nc_vs=HBksFQIYOnBhc3N0aHJvdWdoX2V2ZXJzdG9yZS9HSUNXbUFEZnJBMXhkbklCQU5CakxnWE1HZ0ZkYnBSMUFBQUYVAALIAQAVAhg6cGFzc3Rocm91Z2hfZXZlcnN0b3JlL0dEQTBOaE5WS0NSOUN6Z0JBTzd3bF9YZk82Y0ticFIxQUFBRhUCAsgBACgAGAAbABUAACaYy7z2j%2BD%2FPxUCKAJDMywXQFSKn752yLQYEmRhc2hfaGlnaF8xMDgwcF92MREAdf4HAA%3D%3D&ccb=9-4&oh=00_AfDhahGyOaZhIG1EtyLcq2FYRKrvmaOtO3Vz9cKNVBpmMA&oe=65C3B8C5&_nc_sid=ee9879" frameborder="0" allowfullscreen></iframe>
+   <iframe width="540" height="540" src="https://instagram.fcgk34-1.fna.fbcdn.net/o1/v/t16/f1/m69/GICWmADfrA1xdnIBANBjLgXMGgFdbpR1AAAF.mp4?efg=eyJxZV9ncm91cHMiOiJbXCJpZ193ZWJfZGVsaXZlcnlfdnRzX290ZlwiXSIsInZlbmNvZGVfdGFnIjoidnRzX3ZvZF91cmxnZW4uY2xpcHMuYzIuMTA4MC5oaWdoIn0&_nc_ht=instagram.fcgk34-1.fna.fbcdn.net&_nc_cat=105&vs=1563829104461983_700654015&_nc_vs=HBksFQIYOnBhc3N0aHJvdWdoX2V2ZXJzdG9yZS9HSUNXbUFEZnJBMXhkbklCQU5CakxnWE1HZ0ZkYnBSMUFBQUYVAALIAQAVAhg6cGFzc3Rocm91Z2hfZXZlcnN0b3JlL0dEQTBOaE5WS0NSOUN6Z0JBTzd3bF9YZk82Y0ticFIxQUFBRhUCAsgBACgAGAAbABUAACaYy7z2j%2BD%2FPxUCKAJDMywXQFSKn752yLQYEmRhc2hfaGlnaF8xMDgwcF92MREAdf4HAA%3D%3D&ccb=9-4&oh=00_AfDhahGyOaZhIG1EtyLcq2FYRKrvmaOtO3Vz9cKNVBpmMA&oe=65C3B8C5&_nc_sid=ee9879" frameborder="0" allowfullscreen></iframe>
 
 ## Create a Telegram Bot
 
