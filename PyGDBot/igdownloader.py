@@ -2,13 +2,12 @@ import io
 import os
 import re
 import json
-import telebot
 import logging
 import inspect
 import hashlib
 
 from requests.sessions import Session
-from telebot import types
+from telebot import types, async_telebot
 from urllib.parse import quote
 from datetime import datetime
 from PyGDBot.logger import setup_logging
@@ -24,7 +23,7 @@ class PyGDTelebot:
         load_dotenv()
 
         TOKEN = os.environ.get("TELEBOT_TOKEN")
-        self.__bot = telebot.TeleBot(token=TOKEN)
+        self.__bot = async_telebot.AsyncTeleBot(token=TOKEN)
 
         self.__cookie = os.environ.get("IG_COOKIE")
 
@@ -53,9 +52,10 @@ class PyGDTelebot:
         
 
         @self.__bot.message_handler(commands=["help"])
-        def helper(message):
+        async def helper(message):
             id = message.chat.id
-            self.__bot.send_message(
+            
+            await self.__bot.send_message(
                 chat_id=id,
                 text=(
                     "I can help you using this <b>PyGDTelebot</b>.\n"
@@ -88,7 +88,7 @@ class PyGDTelebot:
             )
 
         @self.__bot.message_handler(commands=["features"])
-        def inlinekeybutton(message):
+        async def inlinekeybutton(message):
             markup = types.InlineKeyboardMarkup()
             allmedia = types.InlineKeyboardButton("All Media", callback_data='All Media')
             images = types.InlineKeyboardButton("Images", callback_data='Images')
@@ -97,10 +97,10 @@ class PyGDTelebot:
 
             markup.add(allmedia, images, videos, linkdownloader)
 
-            self.__bot.send_message(message.chat.id, "🧐 Select one of the downloader features:", reply_markup=markup)
+            await self.__bot.send_message(message.chat.id, "🧐 Select one of the downloader features:", reply_markup=markup)
 
         @self.__bot.callback_query_handler(func=lambda call: True)
-        def option(call):
+        async def option(call):
             id = call.message.chat.id
             call_data = call.data
 
@@ -108,7 +108,7 @@ class PyGDTelebot:
                 case "All Media" | "Images" | "Videos":
                     self.__func_name = call_data
 
-                    message = self.__bot.send_message(
+                    message = await self.__bot.send_message(
                         chat_id=id,
                         text=(
                             f"<i><b>{call_data} Feature</b></i>\n\n"
@@ -117,7 +117,7 @@ class PyGDTelebot:
                         ),
                         parse_mode="HTML"
                     )
-                    self.__bot.reply_to(
+                    await self.__bot.reply_to(
                         message=message,
                         text=(
                             "OK. Complete this!.\n"
@@ -128,7 +128,7 @@ class PyGDTelebot:
                 case "Link Downloader":
                     self.__func_name = call_data
 
-                    message = self.__bot.send_message(
+                    await self.__bot.send_message(
                         chat_id=id,
                         text=(
                             "OK. Send Instagram User Post link!.\n"
@@ -137,20 +137,20 @@ class PyGDTelebot:
                     )
 
         @self.__bot.message_handler(commands=["start", "hello"])
-        def introduction(message):
+        async def introduction(message):
             id = message.chat.id
             username = message.from_user.username
 
-            self.__bot.reply_to(message=message, text=f"Welcome👋, {username}")
-            self.__bot.send_message(
+            await self.__bot.reply_to(message=message, text=f"Welcome👋, {username}")
+            await self.__bot.send_message(
                 chat_id=id,
                 text="If you are still confused when using this <a href='https://t.me/itsPyGD_bot'>bot</a>, see /help.",
                 parse_mode="HTML"
             )
 
         @self.__bot.message_handler(commands=["report"])
-        def report(message):
-            self.__bot.send_message(
+        async def report(message):
+            await self.__bot.send_message(
                 chat_id=message.chat.id,
                 text=(
                     "Report a Problem 🙏 : ...\n\n"
@@ -159,17 +159,17 @@ class PyGDTelebot:
             )
 
         @self.__bot.message_handler(func=lambda message: True if "Report a Problem 🙏" in message.text else False)
-        def savereport(message):
+        async def savereport(message):
             id = message.chat.id
             user = message.from_user.username
 
             with open(f"report/report-{user}-{datetime.now().strftime('%Y%m%d%H%M%S')}.txt", "w") as report_file:
                 report_file.write(message.text)
 
-            self.__bot.send_message(chat_id=id,text="Report sent successfully. Thank you🙏. /help")
+            await self.__bot.send_message(chat_id=id,text="Report sent successfully. Thank you🙏. /help")
 
         @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and message else False)
-        def send_medias(message):
+        async def send_medias(message):
             id = message.chat.id
             parameters = dict()
             parameters.update({"feature": self.__func_name})
@@ -180,7 +180,7 @@ class PyGDTelebot:
                     parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
-                self.__bot.send_message(
+                await self.__bot.send_message(
                     chat_id=id,
                     text=(
                         "Please Wait....\n"
@@ -211,9 +211,9 @@ class PyGDTelebot:
                                 
                                 try:
                                     if len(media_group) == 3:
-                                        self.__bot.send_media_group(chat_id=id,media=media_group)
+                                        await self.__bot.send_media_group(chat_id=id,media=media_group)
                                 except Exception:
-                                    self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
+                                    await self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
 
                             case "Images":
                                 if len(media_group) == 5: media_group.clear()
@@ -223,17 +223,17 @@ class PyGDTelebot:
                                 
                                 try:
                                     if len(media_group) == 5:
-                                        self.__bot.send_media_group(chat_id=id, media=media_group)
+                                        await self.__bot.send_media_group(chat_id=id, media=media_group)
                                 except Exception:
-                                    self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
+                                    await self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
                     try:
                         if media_group:
-                            self.__bot.send_media_group(chat_id=id,media=media_group)
+                            await self.__bot.send_media_group(chat_id=id,media=media_group)
                     except Exception:
                         pass
 
                     if next_max_id:
-                        self.__bot.send_message(
+                        await self.__bot.send_message(
                             chat_id=id,
                             text=(
                                 f"Your previous message : \n{message.text}\n\n"
@@ -241,18 +241,18 @@ class PyGDTelebot:
                             )
                         )
                     else:
-                        self.__bot.send_message(chat_id=id, text="Done 😊")
+                        await self.__bot.send_message(chat_id=id, text="Done 😊")
 
-                    self.__bot.send_message(chat_id=id,text="To continue or not, specify in /features.")
+                    await self.__bot.send_message(chat_id=id,text="To continue or not, specify in /features.")
 
                 except Exception:
-                    self.__http_error(chat_id=id)
+                    await self.__http_error(chat_id=id)
 
             else:
-                self.__instructions(chat_id=id)
+                await self.__instructions(chat_id=id)
 
         @self.__bot.message_handler(func=lambda message: True if self.__func_name == "Link Downloader" and message else False)
-        def send_media_from_ld(message):
+        async def send_media_from_ld(message):
             id = message.chat.id
             param = message.text
 
@@ -260,7 +260,7 @@ class PyGDTelebot:
 
             try:
                 if re.match(pattern=pattern, string=param):
-                    self.__bot.send_message(
+                    await self.__bot.send_message(
                         chat_id=id,
                         text="Please Wait...."
                     )
@@ -277,7 +277,7 @@ class PyGDTelebot:
                             databyte.name = filename
 
                             if databyte:
-                                if len(media_group) == 5:media_group.clear()
+                                if len(media_group) == 5: media_group.clear()
 
                                 if len(media_group) < 5:
                                     if "image" in content_type:
@@ -286,32 +286,32 @@ class PyGDTelebot:
                                         media_group.append(types.InputMediaVideo(media=databyte))
 
                                 if len(media_group) == 5:
-                                    self.__bot.send_media_group(chat_id=id,media=media_group)
+                                    await self.__bot.send_media_group(chat_id=id,media=media_group)
 
                         if media_group:
-                            self.__bot.send_media_group(chat_id=id,media=media_group)
+                            await self.__bot.send_media_group(chat_id=id,media=media_group)
 
-                        self.__bot.send_message(chat_id=id, text="Done 😊")
+                        await self.__bot.send_message(chat_id=id, text="Done 😊")
 
                     except Exception:
-                        self.__http_error(chat_id=id)
+                        await self.__http_error(chat_id=id)
 
                 else:
-                    self.__instructions(chat_id=id)
+                    await self.__instructions(chat_id=id)
 
             except IndexError:
-                self.__instructions(chat_id=id)
+                await self.__instructions(chat_id=id)
 
-    def __http_error(self, chat_id: str):
+    async def __http_error(self, chat_id: str):
         if self.__http_error_reason and self.__http_error_status_code is not None:
-            self.__bot.send_message(
+            await self.__bot.send_message(
                 chat_id=chat_id,
                 text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
             )
-            self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please report this issue. /report")
+            await self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please report this issue. /report")
         else:
-            self.__bot.send_message(chat_id=chat_id, text=f"Error! A request to the Telegram API was unsuccessful.")
-            self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please Try Again 😥. /report")
+            await self.__bot.send_message(chat_id=chat_id, text=f"Error! A request to the Telegram API was unsuccessful.")
+            await self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please Try Again 😥. /report")
 
     def __Csrftoken(self) -> str:
         self.__logger.info("Retrieves X-Csrf-Token from cookie.")
@@ -428,7 +428,6 @@ class PyGDTelebot:
                                 for i in item.get("carousel_media", [item])
                                 if i.get("video_versions")
                             ]
-                        
                         medias.extend(videos)
 
                     case "Images":
@@ -450,7 +449,6 @@ class PyGDTelebot:
                             for i in item.get("carousel_media", [item])
                             if i.get("video_versions")
                         ]
-
                         medias.extend(videos)
             
             return medias, next_max_id
@@ -511,9 +509,9 @@ class PyGDTelebot:
                 )
             )
 
-    def start_polling(self):
+    async def start_polling(self):
         self.__logger.info("Starting the PyGDTelebot program has gone well.")
-        self.__bot.polling(non_stop=False, timeout=240)
+        await self.__bot.polling(non_stop=False, timeout=240)
 
 
 if __name__ == "__main__":

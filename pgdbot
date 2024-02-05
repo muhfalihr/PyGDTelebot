@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+import asyncio
 from PyGDBot.igdownloader import PyGDTelebot
 
 
 if __name__ == "__main__":
     PGD = PyGDTelebot()
-    PGD.start_polling()
+    asyncio.run(PGD.start_polling())
