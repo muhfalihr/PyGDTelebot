@@ -31,9 +31,6 @@ class PyGDTelebot:
         self.__session = Session()
         self.__fake = Faker()
 
-        setup_logging()
-        self.__logger = logging.getLogger(self.__class__.__name__)
-
         self.__headers = dict()
         self.__headers["Accept"] = "application/json, text/plain, */*"
         self.__headers["Accept-Language"] = "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7"
@@ -45,9 +42,16 @@ class PyGDTelebot:
         self.__http_error_status_code = None
         self.__http_error_reason = None
         self.__func_name = None
+        self.__pathdir = os.getcwd()
+
+        if "log" not in os.listdir(self.__pathdir): self.__mkdir(folder_name="log")
+
+        setup_logging()
+        self.__logger = logging.getLogger(self.__class__.__name__)
 
         self.__current_func = lambda: inspect.getouterframes(inspect.currentframe())[1][3]
         self.__delws = lambda text: re.sub(r'\s', '', text)
+        self.__mkdir = lambda folder_name: os.mkdir(path=os.path.join(self.__pathdir, folder_name))
         self.__instructions = lambda chat_id: self.__bot.send_message(chat_id=chat_id, text=f"Unrecognized command. Say what?")
         
 
@@ -162,6 +166,8 @@ class PyGDTelebot:
         async def savereport(message):
             id = message.chat.id
             user = message.from_user.username
+
+            if "report" not in os.listdir(self.__pathdir): self.__mkdir(folder_name="report")
 
             with open(f"report/report-{user}-{datetime.now().strftime('%Y%m%d%H%M%S')}.txt", "w") as report_file:
                 report_file.write(message.text)
