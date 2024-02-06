@@ -190,7 +190,7 @@ class PyGDTelebot:
                     chat_id=id,
                     text=(
                         "Please Wait....\n"
-                        "This process may take a little time so please be patient and wait until the notification message appears."
+                        f"This process may take a {'little' if self.__func_name != 'Videos' else 'long'} time so please be patient and wait until the notification message appears."
                     )
                 )
 
