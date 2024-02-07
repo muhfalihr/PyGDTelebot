@@ -118,8 +118,8 @@ class PyGDTelebot:
                         chat_id=id,
                         text=(
                             f"<i><b>{call_data} Feature</b></i>\n\n"
-                            "username = <b>(Required)</b>\n"
-                            "max_id = <b>(Optional)</b>\n"
+                            "<code>username = (Required)</code>\n"
+                            "<code>max_id = (Optional)</code>\n"
                         ),
                         parse_mode="HTML"
                     )
@@ -210,6 +210,7 @@ class PyGDTelebot:
                         if self.__is_stop:
                             await self.__bot.send_message(chat_id=id, text=f"🛑 Stops media delivery...")
                             self.__is_stop = False
+                            self.__func_name = self.__func_name
                             break
 
                         data, filename, content_type = self.__download(media)
@@ -254,9 +255,10 @@ class PyGDTelebot:
                         await self.__bot.send_message(
                             chat_id=id,
                             text=(
-                                f"Your previous message : \n{message.text}\n\n"
-                                f"Max ID for next media = {next_max_id}"
-                            )
+                                f"Your previous message : \n<code>{message.text}</code>\n\n"
+                                f"Max ID for next media = <code>{next_max_id}</code>"
+                            ),
+                            parse_mode="HTML"
                         )
                     else:
                         await self.__bot.send_message(chat_id=id, text="Done 😊")
