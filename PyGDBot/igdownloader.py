@@ -42,6 +42,7 @@ class PyGDTelebot:
         self.__http_error_status_code = None
         self.__http_error_reason = None
         self.__func_name = None
+        self.__is_stop = False
         self.__pathdir = os.getcwd()
 
         if "log" not in os.listdir(self.__pathdir): self.__mkdir(folder_name="log")
@@ -65,7 +66,8 @@ class PyGDTelebot:
                     "I can help you using this <b>PyGDTelebot</b>.\n"
                     "You can control me by sending these commands :\n\n"
                     "/start - Starting the <a href='https://t.me/itsPyGD_bot'>bot</a>\n"
-                    "/features - Shows the features of this bot.\n\n"
+                    "/features - Shows the features of this bot.\n"
+                    "/stop - Stops media delivery.\n\n"
                     "📖 Description of features:\n"
                     "   ✮ <i>All Media</i> - Images and Videos from Instagram user posts.\n"
                     "   ✮ <i>Images</i> - Images from Instagram user posts.\n"
@@ -174,6 +176,10 @@ class PyGDTelebot:
 
             await self.__bot.send_message(chat_id=id,text="Report sent successfully. Thank you🙏. /help")
 
+        @self.__bot.message_handler(commands=["stop"])
+        async def stop_generate(message):
+            self.__is_stop = True
+
         @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and message else False)
         async def send_medias(message):
             id = message.chat.id
@@ -190,7 +196,7 @@ class PyGDTelebot:
                     chat_id=id,
                     text=(
                         "Please Wait....\n"
-                        f"This process may take a {'little' if self.__func_name != 'Videos' else 'long'} time so please be patient and wait until the notification message appears."
+                        f"🟢 This process may take a {'little' if self.__func_name != 'Videos' else 'long'} time so please be patient and wait until the notification message appears."
                     )
                 )
 
@@ -200,6 +206,11 @@ class PyGDTelebot:
                     media_group = []
 
                     for media in medias:
+
+                        if self.__is_stop:
+                            await self.__bot.send_message(chat_id=id, text=f"🛑 Stops media delivery...")
+                            break
+
                         data, filename, content_type = self.__download(media)
 
                         databyte = io.BytesIO(data)
@@ -268,7 +279,7 @@ class PyGDTelebot:
                 if re.match(pattern=pattern, string=param):
                     await self.__bot.send_message(
                         chat_id=id,
-                        text="Please Wait...."
+                        text="🟢 Please Wait...."
                     )
 
                     try:
@@ -312,11 +323,11 @@ class PyGDTelebot:
         if self.__http_error_reason and self.__http_error_status_code is not None:
             await self.__bot.send_message(
                 chat_id=chat_id,
-                text=f"Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
+                text=f"❌ Error! status code {self.__http_error_status_code} : {self.__http_error_reason}"
             )
             await self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please report this issue. /report")
         else:
-            await self.__bot.send_message(chat_id=chat_id, text=f"Error! A request to the Telegram API was unsuccessful.")
+            await self.__bot.send_message(chat_id=chat_id, text=f"❌ Error! A request to the Telegram API was unsuccessful.")
             await self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please Try Again 😥. /report")
 
     def __Csrftoken(self) -> str:
