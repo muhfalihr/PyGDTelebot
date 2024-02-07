@@ -209,6 +209,7 @@ class PyGDTelebot:
 
                         if self.__is_stop:
                             await self.__bot.send_message(chat_id=id, text=f"🛑 Stops media delivery...")
+                            self.__is_stop = False
                             break
 
                         data, filename, content_type = self.__download(media)
