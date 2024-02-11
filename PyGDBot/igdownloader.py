@@ -43,6 +43,9 @@ class PyGDTelebot:
         self.__http_error_reason = None
         self.__func_name = None
         self.__is_stop = False
+        self.__medias = []
+        self.__next_max_id = None
+        self.__msg_text = ""
         self.__pathdir = os.getcwd()
 
         if "log" not in os.listdir(self.__pathdir): self.__mkdir(folder_name="log")
@@ -180,16 +183,33 @@ class PyGDTelebot:
         async def stop_generate(message):
             self.__is_stop = True
 
-        @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and message else False)
-        async def send_medias(message):
+        @self.__bot.message_handler(func=lambda message: True if message.text.upper() in ["Y", "N"] else False)
+        async def is_continue(message):
             id = message.chat.id
+            match message.text.upper():
+                case "Y":
+                    self.__is_stop = False
+                    await self.__bot.send_message(chat_id=id, text="🟢 Continue sending media...")
+                    await self.__media_processor(id=id)
+
+                case "N":
+                    self.__is_stop = False
+                    await self.__bot.send_message(chat_id=id, text="OK, if you don't want to continue. /features")
+                
+                case _:
+                    await self.__instructions(chat_id=id)
+
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and "=" in message.text else False)
+        async def media_sender(message):
+            id = message.chat.id
+            msg = message.text
+
             parameters = dict()
             parameters.update({"feature": self.__func_name})
 
-            for param in message.text.split("\n"):
-                if "=" in param:
-                    parameter = self.__delws(param).split("=")
-                    parameters.update({parameter[0]: parameter[1]})
+            for param in msg.split("\n"):
+                parameter = self.__delws(param).split("=")
+                parameters.update({parameter[0]: parameter[1]})
 
             if parameters:
                 await self.__bot.send_message(
@@ -203,67 +223,11 @@ class PyGDTelebot:
                 try:
                     medias, next_max_id = self.__media_url_getter(**parameters)
 
-                    media_group = []
+                    self.__medias = medias
+                    self.__next_max_id = next_max_id
+                    self.__msg_text = msg
 
-                    for media in medias:
-
-                        if self.__is_stop:
-                            await self.__bot.send_message(chat_id=id, text=f"🛑 Stops media delivery...")
-                            self.__is_stop = False
-                            self.__func_name = self.__func_name
-                            break
-
-                        data, filename, content_type = self.__download(media)
-
-                        databyte = io.BytesIO(data)
-                        databyte.name = filename
-
-                        match self.__func_name:
-                            case "All Media" | "Videos":
-                                if len(media_group) == 3: media_group.clear()
-
-                                if len(media_group) < 3:
-                                    if "image" in content_type:
-                                        media_group.append(types.InputMediaPhoto(media=databyte))
-                                    if "video" in content_type:
-                                        media_group.append(types.InputMediaVideo(media=databyte))
-                                
-                                try:
-                                    if len(media_group) == 3:
-                                        await self.__bot.send_media_group(chat_id=id,media=media_group)
-                                except Exception:
-                                    await self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
-
-                            case "Images":
-                                if len(media_group) == 5: media_group.clear()
-
-                                if len(media_group) < 5:
-                                    media_group.append(types.InputMediaPhoto(media=databyte))
-                                
-                                try:
-                                    if len(media_group) == 5:
-                                        await self.__bot.send_media_group(chat_id=id, media=media_group)
-                                except Exception:
-                                    await self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
-                    try:
-                        if media_group:
-                            await self.__bot.send_media_group(chat_id=id,media=media_group)
-                    except Exception:
-                        pass
-
-                    if next_max_id:
-                        await self.__bot.send_message(
-                            chat_id=id,
-                            text=(
-                                f"Your previous message : \n<code>{message.text}</code>\n\n"
-                                f"Max ID for next media = <code>{next_max_id}</code>"
-                            ),
-                            parse_mode="HTML"
-                        )
-                    else:
-                        await self.__bot.send_message(chat_id=id, text="Done 😊")
-
-                    await self.__bot.send_message(chat_id=id,text="To continue or not, specify in /features.")
+                    await self.__media_processor(id=id)
 
                 except Exception:
                     await self.__http_error(chat_id=id)
@@ -272,7 +236,7 @@ class PyGDTelebot:
                 await self.__instructions(chat_id=id)
 
         @self.__bot.message_handler(func=lambda message: True if self.__func_name == "Link Downloader" and message else False)
-        async def send_media_from_ld(message):
+        async def media_sender_from_ld(message):
             id = message.chat.id
             param = message.text
 
@@ -321,7 +285,7 @@ class PyGDTelebot:
 
             except IndexError:
                 await self.__instructions(chat_id=id)
-
+    
     async def __http_error(self, chat_id: str):
         if self.__http_error_reason and self.__http_error_status_code is not None:
             await self.__bot.send_message(
@@ -332,6 +296,73 @@ class PyGDTelebot:
         else:
             await self.__bot.send_message(chat_id=chat_id, text=f"❌ Error! A request to the Telegram API was unsuccessful.")
             await self.__bot.send_message(chat_id=chat_id, text="Sorry🙏 Please Try Again 😥. /report")
+
+    async def __media_processor(self, id: str):
+        
+        medias_copy = list(self.__medias)
+
+        media_group = []
+        for media in medias_copy:
+
+            if self.__is_stop: break
+
+            data, filename, content_type = self.__download(media)
+            self.__medias.pop(0)
+
+            databyte = io.BytesIO(data)
+            databyte.name = filename
+
+            match self.__func_name:
+                case "All Media" | "Videos":
+                    if len(media_group) == 3: media_group.clear()
+
+                    if len(media_group) < 3:
+                        if "image" in content_type:
+                            media_group.append(types.InputMediaPhoto(media=databyte))
+                        if "video" in content_type:
+                            media_group.append(types.InputMediaVideo(media=databyte))
+                    
+                    try:
+                        if len(media_group) == 3:
+                            await self.__bot.send_media_group(id=id,media=media_group)
+                    except Exception:
+                        await self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
+
+                case "Images":
+                    if len(media_group) == 5: media_group.clear()
+
+                    if len(media_group) < 5:
+                        media_group.append(types.InputMediaPhoto(media=databyte))
+                    
+                    try:
+                        if len(media_group) == 5:
+                            await self.__bot.send_media_group(chat_id=id, media=media_group)
+                    except Exception:
+                        await self.__bot.send_message(chat_id=id, text="😥 Failed to send media.")
+        try:
+            if media_group: await self.__bot.send_media_group(chat_id=id,media=media_group)
+        except Exception: pass
+
+        if self.__is_stop:
+            await self.__bot.send_message(chat_id=id, text=f"🛑 Stops media delivery...")
+            self.__func_name = self.__func_name
+            await self.__bot.send_message(chat_id=id, text="Do you want to continue? (Y/N)")
+            self.__medias = self.__medias
+        else:
+            if self.__next_max_id:
+                await self.__bot.send_message(
+                    chat_id=id,
+                    text=(
+                        f"Your previous message : \n<code>{self.__msg_text}</code>\n\n"
+                        f"Max ID for next media = <code>{self.__next_max_id}</code>"
+                    ),
+                    parse_mode="HTML"
+                )
+            else:
+                await self.__bot.send_message(chat_id=id, text="Done 😊")
+
+            await self.__bot.send_message(chat_id=id,text="To continue or not, specify in /features.")
+                
 
     def __Csrftoken(self) -> str:
         self.__logger.info("Retrieves X-Csrf-Token from cookie.")
