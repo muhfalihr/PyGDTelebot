@@ -48,17 +48,17 @@ class PyGDTelebot:
         self.__msg_text = ""
         self.__pathdir = os.getcwd()
 
-        if "log" not in os.listdir(self.__pathdir): self.__mkdir(folder_name="log")
-
-        setup_logging()
-        self.__logger = logging.getLogger(self.__class__.__name__)
-
         self.__current_func = lambda: inspect.getouterframes(inspect.currentframe())[1][3]
         self.__delws = lambda text: re.sub(r'\s', '', text)
         self.__mkdir = lambda folder_name: os.mkdir(path=os.path.join(self.__pathdir, folder_name))
         self.__instructions = lambda chat_id: self.__bot.send_message(chat_id=chat_id, text=f"Unrecognized command. Say what?")
         
+        if "log" not in os.listdir(self.__pathdir): self.__mkdir(folder_name="log")
 
+        setup_logging()
+        self.__logger = logging.getLogger(self.__class__.__name__)
+
+       
         @self.__bot.message_handler(commands=["help"])
         async def helper(message):
             id = message.chat.id
@@ -422,7 +422,7 @@ class PyGDTelebot:
                 )
             )
 
-    def __media_url_getter(self, **kwargs) -> (list, str):
+    def __media_url_getter(self, **kwargs) -> Any:
 
         feature = kwargs.get("feature")
 
