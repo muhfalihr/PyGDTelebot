@@ -43,6 +43,8 @@ class PyGDTelebot:
         self.__http_error_reason = None
         self.__func_name = None
         self.__is_stop = False
+        self.__is_click = 0
+        self.__message_id = None
         self.__medias = []
         self.__next_max_id = None
         self.__msg_text = ""
@@ -112,38 +114,61 @@ class PyGDTelebot:
         async def option(call):
             id = call.message.chat.id
             call_data = call.data
+            self.__is_click += 1
 
             match call_data:
                 case "All Media" | "Images" | "Videos":
                     self.__func_name = call_data
 
-                    message = await self.__bot.send_message(
-                        chat_id=id,
-                        text=(
-                            f"<i><b>{call_data} Feature</b></i>\n\n"
-                            "<code>username = (Required)</code>\n"
-                            "<code>max_id = (Optional)</code>\n"
-                        ),
-                        parse_mode="HTML"
-                    )
-                    await self.__bot.reply_to(
-                        message=message,
-                        text=(
-                            "OK. Complete this!.\n"
-                            "Confused? See /help."
+                    if self.__is_click > 1:
+                        message = await self.__bot.edit_message_text(
+                            chat_id=id, 
+                            message_id=self.__message_id, 
+                            text=(
+                                f"<i><b>{call_data} Feature</b></i>\n\n"
+                                "<code>username = (Required)</code>\n"
+                                "<code>max_id = (Optional)</code>\n\n"
+                                "Confused? See /help."
+                            ),
+                            parse_mode="HTML"
                         )
-                    )
+                        self.__message_id = message.message_id
+                    else:
+                        message = await self.__bot.send_message(
+                            chat_id=id,
+                            text=(
+                                f"<i><b>{call_data} Feature</b></i>\n"
+                                "OK. Complete this!.\n\n"
+                                "<code>username = (Required)</code>\n"
+                                "<code>max_id = (Optional)</code>\n\n"
+                                "Confused? See /help."
+                            ),
+                            parse_mode="HTML"
+                        )
+                        self.__message_id = message.message_id
 
                 case "Link Downloader":
                     self.__func_name = call_data
 
-                    await self.__bot.send_message(
-                        chat_id=id,
-                        text=(
-                            "OK. Send Instagram User Post link!.\n"
-                            "Confused? See /help."
+                    if self.__is_click > 1:
+                        message = await self.__bot.edit_message_text(
+                            chat_id=id, 
+                            message_id=self.__message_id, 
+                            text=(
+                                "OK. Send Instagram User Post link!.\n"
+                                "Confused? See /help."
+                            )
                         )
-                    )
+                        self.__message_id = message.message_id
+                    else:
+                        message = await self.__bot.send_message(
+                            chat_id=id,
+                            text=(
+                                "OK. Send Instagram User Post link!.\n"
+                                "Confused? See /help."
+                            )
+                        )
+                        self.__message_id = message.message_id
 
         @self.__bot.message_handler(commands=["start", "hello"])
         async def introduction(message):
@@ -167,7 +192,7 @@ class PyGDTelebot:
                 )
             )
 
-        @self.__bot.message_handler(func=lambda message: True if "Report a Problem 🙏" in message.text else False)
+        @self.__bot.message_handler(func=lambda message: True if re.match(pattern=r'[Rr]eport.+:.+', string=message.text) else False)
         async def savereport(message):
             id = message.chat.id
             user = message.from_user.username
@@ -199,19 +224,19 @@ class PyGDTelebot:
                 case _:
                     await self.__instructions(chat_id=id)
 
-        @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and "=" in message.text else False)
+        @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and message.text else False)
         async def media_sender(message):
             id = message.chat.id
             msg = message.text
 
-            parameters = dict()
-            parameters.update({"feature": self.__func_name})
+            if re.match(pattern=r'(username|max_id) = .+', string=msg):
+                parameters = dict()
+                parameters.update({"feature": self.__func_name})
 
-            for param in msg.split("\n"):
-                parameter = self.__delws(param).split("=")
-                parameters.update({parameter[0]: parameter[1]})
+                for param in msg.split("\n"):
+                    parameter = self.__delws(param).split("=")
+                    parameters.update({parameter[0]: parameter[1]})
 
-            if parameters:
                 await self.__bot.send_message(
                     chat_id=id,
                     text=(
@@ -276,6 +301,8 @@ class PyGDTelebot:
                             await self.__bot.send_media_group(chat_id=id,media=media_group)
 
                         await self.__bot.send_message(chat_id=id, text="Done 😊")
+                        self.__func_name = None
+                        self.__is_click = 0
 
                     except Exception:
                         await self.__http_error(chat_id=id)
@@ -360,6 +387,8 @@ class PyGDTelebot:
                 )
             else:
                 await self.__bot.send_message(chat_id=id, text="Done 😊")
+                self.__func_name = None
+                self.__is_click = 0
 
             await self.__bot.send_message(chat_id=id,text="To continue or not, specify in /features.")
                 
