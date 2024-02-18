@@ -220,6 +220,7 @@ class PyGDTelebot:
                 case "N":
                     self.__is_stop = False
                     await self.__bot.send_message(chat_id=id, text="OK, if you don't want to continue. /features")
+                    self.__is_click = 0
                 
                 case _:
                     await self.__instructions(chat_id=id)
@@ -385,6 +386,7 @@ class PyGDTelebot:
                     ),
                     parse_mode="HTML"
                 )
+                self.__is_click = 0
             else:
                 await self.__bot.send_message(chat_id=id, text="Done 😊")
                 self.__func_name = None
