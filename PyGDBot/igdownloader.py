@@ -110,7 +110,7 @@ class PyGDTelebot:
 
             await self.__bot.send_message(message.chat.id, "🧐 Select one of the downloader features:", reply_markup=markup)
 
-        @self.__bot.callback_query_handler(func=lambda call: True)
+        @self.__bot.callback_query_handler(func=lambda call: True if call.data in ["All Media", "Images", "Videos", "Link Downloader"] else False)
         async def option(call):
             id = call.message.chat.id
             call_data = call.data
@@ -169,6 +169,23 @@ class PyGDTelebot:
                             )
                         )
                         self.__message_id = message.message_id
+        
+        @self.__bot.callback_query_handler(func=lambda call: True if call.data in ["yes", "no"] else False)
+        async def is_continue(call):
+            id = call.message.chat.id
+            message_id = call.message.message_id
+
+            match call.data:
+                case "yes":
+                    self.__is_stop = False
+                    await self.__bot.edit_message_text(chat_id=id, message_id=message_id, reply_markup=None, text="🟢 Continue sending media...")
+                    await self.__media_processor(id=id)
+                
+                case "no":
+                    self.__is_stop = False
+                    await self.__bot.edit_message_text(chat_id=id, message_id=message_id, reply_markup=None, text="OK, if you don't want to continue. /features")
+                    self.__is_click = 0
+
 
         @self.__bot.message_handler(commands=["start", "hello"])
         async def introduction(message):
@@ -207,23 +224,6 @@ class PyGDTelebot:
         @self.__bot.message_handler(commands=["stop"])
         async def stop_generate(message):
             self.__is_stop = True
-
-        @self.__bot.message_handler(func=lambda message: True if message.text.upper() in ["Y", "N"] else False)
-        async def is_continue(message):
-            id = message.chat.id
-            match message.text.upper():
-                case "Y":
-                    self.__is_stop = False
-                    await self.__bot.send_message(chat_id=id, text="🟢 Continue sending media...")
-                    await self.__media_processor(id=id)
-
-                case "N":
-                    self.__is_stop = False
-                    await self.__bot.send_message(chat_id=id, text="OK, if you don't want to continue. /features")
-                    self.__is_click = 0
-                
-                case _:
-                    await self.__instructions(chat_id=id)
 
         @self.__bot.message_handler(func=lambda message: True if self.__func_name in ["All Media", "Images", "Videos"] and message.text else False)
         async def media_sender(message):
@@ -374,7 +374,13 @@ class PyGDTelebot:
         if self.__is_stop:
             await self.__bot.send_message(chat_id=id, text=f"🛑 Stops media delivery...")
             self.__func_name = self.__func_name
-            await self.__bot.send_message(chat_id=id, text="Do you want to continue? (Y/N)")
+
+            markup = types.InlineKeyboardMarkup()
+            yes = types.InlineKeyboardButton("Yes", callback_data='yes')
+            no = types.InlineKeyboardButton("No", callback_data='no')
+            
+            markup.add(yes, no)
+            await self.__bot.send_message(chat_id=id, text="🧐 Do you want to continue?", reply_markup=markup)
             self.__medias = self.__medias
         else:
             if self.__next_max_id:
