@@ -266,7 +266,7 @@ class PyGDTelebot:
             id = message.chat.id
             param = message.text
 
-            pattern = r'https:\/\/www\.instagram\.com\/.+\/.+\/\?(utm_source=ig_web_copy_link|igsh=.+)'
+            pattern = r'https:\/\/www\.instagram\.com\/.+(\/.+\/\?(utm_source=ig_web_copy_link|igsh=.+)|\/\d+\?utm_source=.+&igsh=.+)'
 
             try:
                 if re.match(pattern=pattern, string=param):
